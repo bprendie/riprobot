@@ -14,7 +14,7 @@ Rip Robot is a bash-based automation tool designed to turn a stack of optical dr
 *   **Auto-Normalization:** Applies **ReplayGain** tags automatically during the pipeline.
 *   **Sanitized Organization:** Sorts output into `Artist/Album/Track - Title.m4a` and cleans up special characters.
 
-## 🍏 Why AAC? (Legacy iPod Context)
+## 🍏 Why AAC? (Legacy iPod Support)
 
 This configuration is intentionally designed for users of vintage iPods (especially those using FireWire for syncing). 
 *   **Efficiency:** AAC-LC (Low Complexity) is the native language of the iPod's hardware decoder. 
