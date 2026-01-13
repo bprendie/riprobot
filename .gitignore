@@ -1,0 +1,13 @@
+# Ignore everything
+*
+
+# But keep these:
+!rip_robot.sh
+!abcde.conf
+!README.md
+!GEMINI.md
+!.gitignore
+
+# Explicitly ignore these (redundant but safe)
+abcde.*/
+rip_log.txt
