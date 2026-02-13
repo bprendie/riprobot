@@ -1,0 +1,148 @@
+#!/bin/bash
+
+# ==============================================================================
+# ROBORIP v5.0 | Verbose Parallel Edition
+# ==============================================================================
+
+# --- CONFIGURATION ---
+DRIVES=("/dev/sr0" "/dev/sr1" "/dev/sr2" "/dev/sr3" "/dev/sr4")
+BASE_DIR="$HOME/Music/RoboRip"
+TEMP_BASE="/tmp/roborip"
+
+# --- ARGUMENTS ---
+PROFILE=$1
+DEST=$2
+
+if [[ -z "$PROFILE" ]]; then
+    echo "Usage: $0 [flac|mp3-hq|mp3-norm|ipod] [OPTIONAL_DESTINATION]"
+    exit 1
+fi
+
+if [[ ! -z "$DEST" ]]; then BASE_DIR="${DEST%/}"; fi
+mkdir -p "$BASE_DIR"
+mkdir -p "$TEMP_BASE"
+
+# --- PROFILES ---
+case "$PROFILE" in
+    "flac") TYPE="flac"; OPTS="-8 --verify" ;;
+    "mp3-hq") TYPE="mp3"; OPTS="-V 0" ;;
+    "mp3-norm") TYPE="mp3"; OPTS="-b 160" ;;
+    "ipod") TYPE="m4a"; OPTS="-p 2 -b 160000 --afterburner 1" ;;
+    *) echo "Invalid profile"; exit 1 ;;
+esac
+
+# ==============================================================================
+# 1. CONFIG GENERATOR
+# ==============================================================================
+
+gen_config() {
+    local drive=$1
+    local id=$2
+    local wav_dir="$TEMP_BASE/wav_$id"
+    mkdir -p "$wav_dir"
+
+    cat <<EOF
+CDROMREADERSYNTAX=cdparanoia
+OUTPUTTYPE="$TYPE"
+WAVOUTPUTDIR="$wav_dir"
+OUTPUTDIR="$BASE_DIR"
+OUTPUTFORMAT='\${ARTISTFILE}/\${ALBUMFILE}/\${TRACKNUM}_\${TRACKFILE}'
+VAOUTPUTFORMAT='Various/\${ALBUMFILE}/\${TRACKNUM}_\${TRACKFILE}'
+ONETRACKOUTPUTFORMAT='\${ARTISTFILE}/\${ALBUMFILE}/\${ALBUMFILE}'
+VAONETRACKOUTPUTFORMAT='Various/\${ALBUMFILE}/\${ALBUMFILE}'
+CDPARANOIAOPTS="-Y --never-skip=40 -S 0"
+CDSPEEDVALUE=0
+MAXPROCS=8
+LAMEOPTS="$OPTS"
+FLACOPTS="$OPTS"
+FDKAACENCOPTS="$OPTS"
+AACENCODERSYNTAX="fdkaac"
+EJECTCD=y
+INTERACTIVE=n
+PADTRACKS=y
+CDDBMETHOD=musicbrainz,cddb
+EOF
+}
+
+# ==============================================================================
+# 2. THE WORKER
+# ==============================================================================
+
+run_worker() {
+    local drive=$1
+    local id=${drive##*/}
+    local conf_file="$TEMP_BASE/conf_$id"
+
+    # Write config
+    gen_config "$drive" "$id" > "$conf_file"
+
+    echo "[INIT] Drive $id monitoring started."
+
+    while true; do
+        # Check for disc
+        if cd-discid "$drive" > /dev/null 2>&1; then
+            echo "****************************************************************"
+            echo " DRIVE $id: DISC DETECTED - STARTING VERBOSE RIP"
+            echo "****************************************************************"
+            
+            # Force max drive speed
+            eject -x 0 "$drive"
+
+            # Run abcde in foreground (for this subshell)
+            # Output will interleave with other workers
+            abcde -d "$drive" -c "$conf_file" -N
+            
+            EXIT_CODE=$?
+            rm -rf "$TEMP_BASE/wav_$id"
+            
+            if [ $EXIT_CODE -eq 0 ]; then
+                echo "----------------------------------------------------------------"
+                echo " DRIVE $id: SUCCESSFUL COMPLETION"
+                echo "----------------------------------------------------------------"
+            else
+                echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                echo " DRIVE $id: ERROR ENCOUNTERED (Exit Code: $EXIT_CODE)"
+                echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                eject "$drive"
+            fi
+            
+            sleep 10
+        else
+            sleep 5
+        fi
+    done
+}
+
+# ==============================================================================
+# 3. EXECUTION
+# ==============================================================================
+
+cleanup() {
+    echo -e "\n[CLEANUP] Shutting down workers..."
+    # Kill children of this script
+    pkill -P $$
+    # Clean up temp files
+    rm -rf "$TEMP_BASE"
+    exit 0
+}
+trap cleanup SIGINT SIGTERM
+
+echo "Starting RoboRip v5 (Verbose Parallel)..."
+echo "Profile: $PROFILE"
+echo "Dest:    $BASE_DIR"
+echo "Drives:  ${DRIVES[*]}"
+echo "Press [Ctrl+C] to stop."
+echo "--------------------------------------------------------------------------------"
+
+for drive in "${DRIVES[@]}"; do
+    run_worker "$drive" &
+done
+
+# Wait for all background jobs to finish
+# Using a loop with wait to ensure signals are caught correctly
+while true; do
+    wait -n || true
+    if [ -z "$(jobs -p)" ]; then
+        break
+    fi
+done
