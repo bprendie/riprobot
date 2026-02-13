@@ -4,8 +4,11 @@
 
 ## Features
 - **Parallel Ripping:** Monitors and rips from multiple drives (`/dev/sr0`, `/dev/sr1`, etc.) simultaneously using background workers.
-- **Multiple Profiles:** Supports `flac`, `mp3-hq`, `mp3-norm`, and `ipod` (m4a) encoding out of the box.
-    - `ipod`: An AAC profile (`.m4a`) specifically tuned for the **iPod Classic**. It is configured to be backwards compatible with **1st and 2nd Generation FireWire iPods**, ensuring your rips play perfectly on vintage hardware.
+- **Multiple Profiles:**
+    - `flac`: Free Lossless Audio Codec. Maximum compression level (`-8`) with verification. Best for archival and high-fidelity listening.
+    - `mp3-hq`: High-quality MP3 using LAME Variable Bitrate (VBR) mode 0 (`-V 0`). Excellent balance between file size and audio quality.
+    - `mp3-norm`: Standard quality MP3 at a constant bitrate of 160kbps. Good for general use and maximum device compatibility.
+    - `ipod`: AAC (`.m4a`) profile specifically tuned for the **iPod Classic**. Uses `fdkaac` and is configured to be backwards compatible with **1st and 2nd Generation FireWire iPods**, ensuring your rips play perfectly on vintage hardware.
 - **Automated Monitoring:** Polls drives every 5 seconds and triggers `abcde` automatically upon disc detection.
 - **Custom Metadata:** Supports both MusicBrainz and GNUDB (CDDB) for metadata retrieval.
 
