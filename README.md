@@ -5,6 +5,7 @@
 ## Features
 - **Parallel Ripping:** Monitors and rips from multiple drives (`/dev/sr0`, `/dev/sr1`, etc.) simultaneously using background workers.
 - **Multiple Profiles:** Supports `flac`, `mp3-hq`, `mp3-norm`, and `ipod` (m4a) encoding out of the box.
+    - `ipod`: An AAC profile (`.m4a`) specifically tuned for the **iPod Classic**. It is configured to be backwards compatible with **1st and 2nd Generation FireWire iPods**, ensuring your rips play perfectly on vintage hardware.
 - **Automated Monitoring:** Polls drives every 5 seconds and triggers `abcde` automatically upon disc detection.
 - **Custom Metadata:** Supports both MusicBrainz and GNUDB (CDDB) for metadata retrieval.
 
